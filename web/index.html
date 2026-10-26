@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0d12">
+<title>PC Deck</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #151922; --panel2: #1d2330; --line: #2a3142;
+    --text: #e8ebf2; --muted: #8a93a6; --accent: #22c55e; --bad: #ef4444;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
+  body { display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+
+  header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); flex: none; transition: background .2s; }
+  .dot.on { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .pages { display: flex; gap: 6px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  .pages::-webkit-scrollbar { display: none; }
+  .chip { padding: 7px 14px; border-radius: 999px; background: var(--panel); color: var(--muted); white-space: nowrap; }
+  .chip.active { background: var(--panel2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+  .icon-btn { width: 38px; height: 38px; border-radius: 12px; background: var(--panel); display: grid; place-items: center; flex: none; font-size: 18px; }
+  .icon-btn.active { background: var(--accent); color: #04130a; }
+
+  main { flex: 1; min-height: 0; position: relative; }
+  .view { position: absolute; inset: 0; display: none; }
+  .view.active { display: flex; flex-direction: column; }
+
+  /* ---------- deck ---------- */
+  #deck { padding: 6px 14px 14px; overflow-y: auto; }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(var(--cols, 5), 1fr); }
+  .key { aspect-ratio: 1; border-radius: var(--radius); background: var(--c, #334155);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px; position: relative; overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -3px 0 rgba(0,0,0,.25), 0 4px 14px rgba(0,0,0,.35);
+    transition: transform .08s, filter .08s; }
+  .key::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.10), transparent 45%); pointer-events: none; }
+  .key:active, .key.pressed { transform: scale(.94); filter: brightness(1.25); }
+  .key .ic { font-size: clamp(26px, 5.5vw, 56px); line-height: 1; }
+  .key .lb { font-size: clamp(11px, 1.6vw, 15px); font-weight: 600; text-align: center; text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .key.ok { animation: flash-ok .45s; }
+  .key.err { animation: flash-err .6s; }
+  @keyframes flash-ok { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  @keyframes flash-err { 0%,60% { box-shadow: 0 0 0 4px var(--bad); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .key.add { background: transparent; border: 2px dashed var(--line); box-shadow: none; color: var(--muted); }
+  .editing .key:not(.add) { animation: wiggle .35s infinite alternate; }
+  @keyframes wiggle { from { transform: rotate(-1deg); } to { transform: rotate(1deg); } }
+  .edit-bar { display: none; gap: 8px; flex-wrap: wrap; align-items: center; padding: 0 0 12px; }
+  .editing .edit-bar { display: flex; }
+  .pill { padding: 8px 14px; border-radius: 10px; background: var(--panel2); }
+  .pill.primary { background: var(--accent); color: #04130a; font-weight: 700; }
+  .pill.danger { background: #3a1416; color: #fca5a5; }
+
+  /* ---------- touchpad ---------- */
+  #pad { padding: 6px 14px 14px; gap: 10px; }
+  .surface { flex: 1; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line);
+    touch-action: none; display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; }
+  .row { display: flex; gap: 10px; }
+  .row > button { flex: 1; height: 56px; border-radius: 12px; background: var(--panel2); font-weight: 600; }
+  .row > button.held { background: var(--accent); color: #04130a; }
+  .kbd { display: flex; gap: 8px; }
+  .kbd input { flex: 1; height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); padding: 0 14px; font: inherit; user-select: text; }
+  .keys { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .keys button { padding: 10px 14px; border-radius: 10px; background: var(--panel2); white-space: nowrap; font-size: 14px; }
+
+  /* ---------- screen ---------- */
+  #screen { background: #000; }
+  #screen .stage { flex: 1; display: grid; place-items: center; touch-action: none; overflow: hidden; }
+  #screen img { max-width: 100%; max-height: 100%; display: block; }
+  #screen .bar { display: flex; gap: 8px; padding: 8px 14px; align-items: center; color: var(--muted); font-size: 13px; }
+  #screen .bar select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+
+  nav { display: flex; gap: 6px; padding: 8px 14px calc(8px + env(safe-area-inset-bottom)); background: var(--panel); border-top: 1px solid var(--line); }
+  nav button { flex: 1; padding: 10px; border-radius: 12px; color: var(--muted); font-weight: 600; }
+  nav button.active { background: var(--panel2); color: var(--text); }
+
+  /* ---------- dialogs ---------- */
+  dialog { border: 1px solid var(--line); border-radius: 20px; background: var(--panel); color: var(--text);
+    width: min(520px, 94vw); padding: 20px; max-height: 90vh; overflow-y: auto; }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog h2 { margin: 0 0 14px; font-size: 18px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 5px; text-transform: uppercase; letter-spacing: .04em; }
+  dialog input, dialog select, dialog textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--text); font: inherit; user-select: text; }
+  dialog textarea { min-height: 120px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw { width: 34px; height: 34px; border-radius: 10px; }
+  .sw.sel { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text); }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+  .actions { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+  .actions .grow { flex: 1; }
+  .preview { width: 92px; margin: 0 auto 4px; }
+  #toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: var(--panel2); padding: 10px 16px;
+    border-radius: 12px; border: 1px solid var(--line); opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; z-index: 10; }
+  #toast.show { opacity: 1; }
+  .center-msg { margin: auto; text-align: center; color: var(--muted); padding: 30px; max-width: 420px; }
+  .center-msg input { width: 100%; margin: 12px 0; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; user-select: text; }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot" title="Connection"></span>
+  <div class="pages" id="pages"></div>
+  <button class="icon-btn" id="editBtn" title="Edit buttons">✏️</button>
+  <button class="icon-btn" id="fsBtn" title="Fullscreen">⛶</button>
+</header>
+
+<main>
+  <section class="view active" id="deck">
+    <div class="edit-bar">
+      <button class="pill" id="addPage">+ Page</button>
+      <button class="pill" id="renamePage">Rename page</button>
+      <button class="pill danger" id="delPage">Delete page</button>
+      <span style="flex:1"></span>
+      <span class="hint" style="margin:0">Columns</span>
+      <button class="pill" id="colMinus">−</button>
+      <span id="colVal">5</span>
+      <button class="pill" id="colPlus">+</button>
+      <button class="pill primary" id="doneEdit">Done</button>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="view" id="pad">
+    <div class="surface" id="surface">One finger: move · Tap: click · Two-finger tap: right-click<br>Two-finger drag: scroll</div>
+    <div class="row">
+      <button data-btn="left">Left</button>
+      <button data-btn="middle">Middle</button>
+      <button data-btn="right">Right</button>
+      <button id="dragBtn">Hold</button>
+    </div>
+    <div class="kbd">
+      <input id="typeBox" placeholder="Type here to send text to the PC…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="keys" id="specialKeys"></div>
+  </section>
+
+  <section class="view" id="screen">
+    <div class="stage" id="stage"><div class="center-msg" id="screenMsg">Screen view is off.</div><img id="screenImg" alt="" hidden></div>
+    <div class="bar">
+      <span>Tap = click · Long-press = right-click</span>
+      <span style="flex:1"></span>
+      <select id="fps"><option value="4">4 fps</option><option value="8" selected>8 fps</option><option value="15">15 fps</option><option value="24">24 fps</option></select>
+      <select id="qual"><option value="1024">Low</option><option value="1280" selected>Med</option><option value="1920">High</option></select>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-view="deck" class="active">▦ Deck</button>
+  <button data-view="pad">🖱️ Touchpad</button>
+  <button data-view="screen">🖥️ Screen</button>
+</nav>
+
+<dialog id="editor">
+  <h2 id="edTitle">Edit button</h2>
+  <div class="preview"><div class="key" id="edPreview"><span class="ic"></span><span class="lb"></span></div></div>
+  <div class="two">
+    <div><label>Label</label><input id="edLabel" maxlength="24"></div>
+    <div><label>Icon (emoji or text)</label><input id="edIcon" maxlength="8"></div>
+  </div>
+  <label>Color</label>
+  <div class="swatches" id="edColors"></div>
+  <label>Action</label>
+  <select id="edType">
+    <option value="hotkey">Keyboard shortcut</option>
+    <option value="media">Media / volume</option>
+    <option value="launch">Open app or file</option>
+    <option value="url">Open website</option>
+    <option value="text">Type text</option>
+    <option value="command">Run command</option>
+    <option value="multi">Multi-action (macro)</option>
+    <option value="page">Go to page</option>
+  </select>
+  <div id="edFields"></div>
+  <div class="actions">
+    <button class="pill" id="edLeft">◀ Move</button>
+    <button class="pill" id="edRight">Move ▶</button>
+    <button class="pill danger" id="edDelete">Delete</button>
+    <span class="grow"></span>
+    <button class="pill" id="edTest">Test</button>
+    <button class="pill" id="edCancel">Cancel</button>
+    <button class="pill primary" id="edSave">Save</button>
+  </div>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+(() => {
+  // ---------------------------------------------------------------- token
+  const params = new URLSearchParams(location.search);
+  let token = params.get("t");
+  try {
+    if (token) localStorage.setItem("deck.token", token);
+    else token = localStorage.getItem("deck.token");
+  } catch (e) {}
+  if (params.has("t")) history.replaceState(null, "", location.pathname);
+
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const vibrate = (ms = 12) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  if (!token) {
+    $("main").innerHTML = `<div class="center-msg">
+      <h2>Connect to your PC</h2>
+      <p>Open the link shown in the PC Deck window on your computer, or paste the token here.</p>
+      <input id="tokIn" placeholder="Token"><button class="pill primary" id="tokGo">Connect</button></div>`;
+    $("#tokGo").onclick = () => { const v = $("#tokIn").value.trim(); if (v) location.search = "?t=" + encodeURIComponent(v); };
+    return;
+  }
+
+  // ---------------------------------------------------------------- socket
+  let ws, wsReady = false, reqId = 0;
+  const pending = new Map();
+  function connect() {
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    ws = new WebSocket(`${proto}://${location.host}/ws?t=${encodeURIComponent(token)}`);
+    ws.binaryType = "blob";
+    ws.onopen = () => { wsReady = true; $("#dot").classList.add("on"); if (screenOn) startScreen(); };
+    ws.onclose = () => { wsReady = false; $("#dot").classList.remove("on"); setTimeout(connect, 1500); };
+    ws.onmessage = (ev) => {
+      if (ev.data instanceof Blob) return showFrame(ev.data);
+      const m = JSON.parse(ev.data);
+      if (m.type === "hello") hasScreen = m.screen;
+      if (m.type === "ok" && pending.has(m.id)) { pending.get(m.id)("ok"); pending.delete(m.id); }
+      if (m.type === "error") {
+        if (m.id && pending.has(m.id)) { pending.get(m.id)("err"); pending.delete(m.id); }
+        toast("⚠️ " + m.message);
+      }
+    };
+  }
+  const send = (obj) => { if (wsReady) ws.send(JSON.stringify(obj)); };
+  function sendAction(action, el) {
+    if (!wsReady) { toast("Not connected to PC"); el && flash(el, "err"); return; }
+    const id = ++reqId;
+    if (el) pending.set(id, (r) => flash(el, r));
+    send({ type: "action", action, id });
+  }
+  function flash(el, cls) { el.classList.remove("ok", "err"); void el.offsetWidth; el.classList.add(cls); }
+
+  // ---------------------------------------------------------------- deck
+  let config = { columns: 5, pages: [] }, pageIdx = 0, editing = false;
+  const COLORS = ["#7c3aed", "#2563eb", "#0891b2", "#0f766e", "#16a34a", "#ca8a04", "#ea580c", "#b91c1c", "#db2777", "#475569", "#1f2937"];
+
+  async function loadConfig() {
+    try {
+      const r = await fetch("/api/config", { headers: { "X-Deck-Token": token } });
+      if (r.status === 401) { localStorage.removeItem("deck.token"); toast("Token rejected — reopen the link from your PC"); return; }
+      config = await r.json();
+      try { pageIdx = Math.min(+localStorage.getItem("deck.page") || 0, config.pages.length - 1); } catch (e) {}
+      render();
+    } catch (e) { toast("Can't reach PC"); setTimeout(loadConfig, 2000); }
+  }
+  async function saveConfig() {
+    const r = await fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json", "X-Deck-Token": token },
+      body: JSON.stringify({ pages: config.pages, columns: config.columns }) });
+    toast(r.ok ? "Saved" : "Save failed");
+  }
+
+  function render() {
+    if (!config.pages.length) config.pages.push({ name: "Main", buttons: [] });
+    pageIdx = Math.max(0, Math.min(pageIdx, config.pages.length - 1));
+    try { localStorage.setItem("deck.page", pageIdx); } catch (e) {}
+    $("#pages").innerHTML = config.pages.map((p, i) => `<button class="chip ${i === pageIdx ? "active" : ""}" data-i="${i}">${esc(p.name)}</button>`).join("");
+    const page = config.pages[pageIdx];
+    const grid = $("#grid");
+    grid.style.setProperty("--cols", config.columns || 5);
+    $("#colVal").textContent = config.columns || 5;
+    grid.innerHTML = page.buttons.map((b, i) =>
+      `<button class="key" data-i="${i}" style="--c:${esc(b.color || "#334155")}"><span class="ic">${esc(b.icon || "")}</span><span class="lb">${esc(b.label || "")}</span></button>`
+    ).join("") + (editing ? `<button class="key add" id="addKey"><span class="ic">＋</span><span class="lb">Add</span></button>` : "");
+    $("#deck").classList.toggle("editing", editing);
+    $("#editBtn").classList.toggle("active", editing);
+  }
+
+  $("#pages").onclick = (e) => { const c = e.target.closest(".chip"); if (c) { pageIdx = +c.dataset.i; render(); } };
+  $("#grid").addEventListener("click", (e) => {
+    if (e.target.closest("#addKey")) return openEditor(-1);
+    const k = e.target.closest(".key"); if (!k) return;
+    const i = +k.dataset.i, b = config.pages[pageIdx].buttons[i];
+    if (editing) return openEditor(i);
+    vibrate();
+    const a = b.action || {};
+    if (a.type === "page") {
+      const target = config.pages.findIndex((p) => p.name === a.page);
+      if (target >= 0) { pageIdx = target; render(); } else toast(`No page named "${a.page}"`);
+      return;
+    }
+    sendAction(a, k);
+  });
+
+  $("#editBtn").onclick = () => { editing = !editing; render(); };
+  $("#doneEdit").onclick = () => { editing = false; render(); saveConfig(); };
+  $("#addPage").onclick = () => {
+    const name = prompt("New page name:", "Page " + (config.pages.length + 1)); if (!name) return;
+    config.pages.push({ name, buttons: [{ label: "Back", icon: "⬅️", color: "#475569", action: { type: "page", page: config.pages[0].name } }] });
+    pageIdx = config.pages.length - 1; render();
+  };
+  $("#renamePage").onclick = () => {
+    const p = config.pages[pageIdx], old = p.name;
+    const name = prompt("Rename page:", old); if (!name || name === old) return;
+    p.name = name;
+    config.pages.forEach((pg) => pg.buttons.forEach((b) => { if (b.action?.type === "page" && b.action.page === old) b.action.page = name; }));
+    render();
+  };
+  $("#delPage").onclick = () => {
+    if (config.pages.length < 2) return toast("Keep at least one page");
+    if (!confirm(`Delete page "${config.pages[pageIdx].name}" and its buttons?`)) return;
+    config.pages.splice(pageIdx, 1); pageIdx = 0; render();
+  };
+  $("#colMinus").onclick = () => { config.columns = Math.max(2, (config.columns || 5) - 1); render(); };
+  $("#colPlus").onclick = () => { config.columns = Math.min(10, (config.columns || 5) + 1); render(); };
+
+  // ---------------------------------------------------------------- editor
+  const ed = $("#editor");
+  let edIdx = -1, edBtn = null;
+  const FIELDS = {
+    hotkey: [["keys", "Keys", "ctrl+shift+m", "Join with +. Examples: ctrl+c, win+d, alt+f4, ctrl+shift+esc, f5"]],
+    media: [["key", "Media key", "", "", ["play_pause", "next", "prev", "mute", "vol_up", "vol_down"]], ["repeat", "Repeat (volume steps)", "1"]],
+    launch: [["path", "Path, app, or shortcut", "C:\\Program Files\\App\\app.exe", "Drag a file into a Command Prompt to copy its full path. .lnk shortcuts work too."], ["args", "Arguments (optional)", ""]],
+    url: [["url", "Website", "https://"]],
+    text: [["text", "Text to type", "Hello!"]],
+    command: [["command", "Command", "shutdown /s /t 60", "Runs in the Windows command shell."]],
+    multi: [["steps", "Steps (JSON)", "", 'One action per line in a list. Each can have "delay" in seconds.', null, true]],
+    page: [["page", "Page", "", "", "PAGES"]],
+  };
+  const MULTI_EXAMPLE = [
+    { type: "launch", path: "notepad.exe", delay: 0.8 },
+    { type: "text", text: "Hello from PC Deck" },
+    { type: "hotkey", keys: "ctrl+s" },
+  ];
+
+  function openEditor(i) {
+    edIdx = i;
+    edBtn = i >= 0 ? JSON.parse(JSON.stringify(config.pages[pageIdx].buttons[i]))
+      : { label: "New", icon: "⭐", color: COLORS[0], action: { type: "hotkey", keys: "" } };
+    $("#edTitle").textContent = i >= 0 ? "Edit button" : "New button";
+    $("#edLabel").value = edBtn.label || "";
+    $("#edIcon").value = edBtn.icon || "";
+    $("#edType").value = edBtn.action?.type || "hotkey";
+    $("#edDelete").hidden = $("#edLeft").hidden = $("#edRight").hidden = i < 0;
+    renderColors(); renderFields(); updatePreview();
+    ed.showModal();
+  }
+  function renderColors() {
+    $("#edColors").innerHTML = COLORS.map((c) => `<button class="sw ${c === edBtn.color ? "sel" : ""}" data-c="${c}" style="background:${c}"></button>`).join("");
+  }
+  $("#edColors").onclick = (e) => { const s = e.target.closest(".sw"); if (s) { edBtn.color = s.dataset.c; renderColors(); updatePreview(); } };
+  function renderFields() {
+    const type = $("#edType").value, a = edBtn.action?.type === type ? edBtn.action : {};
+    $("#edFields").innerHTML = FIELDS[type].map(([k, lbl, ph, hint, opts, area]) => {
+      let val = a[k] ?? "";
+      if (k === "steps") val = JSON.stringify(a.steps?.length ? a.steps : MULTI_EXAMPLE, null, 2);
+      if (opts === "PAGES") opts = config.pages.map((p) => p.name);
+      let input = opts ? `<select data-k="${k}">${opts.map((o) => `<option ${o === val ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`
+        : area ? `<textarea data-k="${k}">${esc(val)}</textarea>`
+        : `<input data-k="${k}" value="${esc(val)}" placeholder="${esc(ph)}">`;
+      return `<label>${lbl}</label>${input}${hint ? `<div class="hint">${esc(hint)}</div>` : ""}`;
+    }).join("");
+  }
+  function readAction() {
+    const type = $("#edType").value, a = { type };
+    for (const el of $("#edFields").querySelectorAll("[data-k]")) {
+      const k = el.dataset.k; let v = el.value;
+      if (k === "steps") { v = JSON.parse(v); if (!Array.isArray(v)) throw new Error("Steps must be a list [ … ]"); }
+      if (k === "repeat") v = Math.max(1, parseInt(v) || 1);
+      a[k] = v;
+    }
+    return a;
+  }
+  function updatePreview() {
+    const p = $("#edPreview");
+    p.style.setProperty("--c", edBtn.color);
+    p.querySelector(".ic").textContent = $("#edIcon").value;
+    p.querySelector(".lb").textContent = $("#edLabel").value;
+  }
+  $("#edLabel").oninput = $("#edIcon").oninput = updatePreview;
+  $("#edType").onchange = renderFields;
+  $("#edCancel").onclick = () => ed.close();
+  $("#edTest").onclick = () => { try { const a = readAction(); if (a.type !== "page") sendAction(a, $("#edPreview")); } catch (e) { toast(e.message); } };
+  $("#edSave").onclick = () => {
+    try { edBtn.action = readAction(); } catch (e) { return toast("Fix the steps: " + e.message); }
+    edBtn.label = $("#edLabel").value; edBtn.icon = $("#edIcon").value;
+    const list = config.pages[pageIdx].buttons;
+    if (edIdx >= 0) list[edIdx] = edBtn; else list.push(edBtn);
+    ed.close(); render(); saveConfig();
+  };
+  $("#edDelete").onclick = () => { config.pages[pageIdx].buttons.splice(edIdx, 1); ed.close(); render(); saveConfig(); };
+  function move(d) {
+    const list = config.pages[pageIdx].buttons, j = edIdx + d;
+    if (j < 0 || j >= list.length) return;
+    [list[edIdx], list[j]] = [list[j], list[edIdx]]; edIdx = j; render(); saveConfig();
+  }
+  $("#edLeft").onclick = () => move(-1);
+  $("#edRight").onclick = () => move(1);
+
+  // ---------------------------------------------------------------- touchpad
+  const surface = $("#surface");
+  const touches = new Map();
+  let moved = false, downAt = 0, maxTouches = 0, last = null, scrollAcc = 0, moveBuf = { dx: 0, dy: 0 }, rafPending = false;
+  const SPEED = 1.6;
+  function flushMove() {
+    rafPending = false;
+    if (moveBuf.dx || moveBuf.dy) { send({ type: "move", dx: Math.round(moveBuf.dx), dy: Math.round(moveBuf.dy) }); moveBuf = { dx: 0, dy: 0 }; }
+  }
+  surface.addEventListener("pointerdown", (e) => {
+    surface.setPointerCapture(e.pointerId);
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size === 1) { moved = false; downAt = performance.now(); maxTouches = 1; }
+    maxTouches = Math.max(maxTouches, touches.size);
+    last = avg();
+  });
+  surface.addEventListener("pointermove", (e) => {
+    if (!touches.has(e.pointerId)) return;
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const p = avg(), dx = p.x - last.x, dy = p.y - last.y; last = p;
+    if (Math.abs(dx) + Math.abs(dy) > 1) moved = true;
+    if (touches.size >= 2) {
+      scrollAcc += dy;
+      const steps = Math.trunc(scrollAcc / 25);
+      if (steps) { send({ type: "scroll", dy: steps }); scrollAcc -= steps * 25; }
+    } else {
+      const accel = 1 + Math.min(2, Math.hypot(dx, dy) / 12);
+      moveBuf.dx += dx * SPEED * accel; moveBuf.dy += dy * SPEED * accel;
+      if (!rafPending) { rafPending = true; requestAnimationFrame(flushMove); }
+    }
+  });
+  const endTouch = (e) => {
+    if (!touches.has(e.pointerId)) return;
+    touches.delete(e.pointerId);
+    last = touches.size ? avg() : null;
+    if (touches.size === 0) {
+      if (!moved && performance.now() - downAt < 250) { vibrate(8); send({ type: "click", button: maxTouches >= 2 ? "right" : "left" }); }
+      scrollAcc = 0;
+    }
+  };
+  surface.addEventListener("pointerup", endTouch);
+  surface.addEventListener("pointercancel", endTouch);
+  function avg() { let x = 0, y = 0; touches.forEach((t) => { x += t.x; y += t.y; }); return { x: x / touches.size, y: y / touches.size }; }
+
+  document.querySelectorAll("[data-btn]").forEach((b) => b.onclick = () => { vibrate(8); send({ type: "click", button: b.dataset.btn }); });
+  let dragging = false;
+  $("#dragBtn").onclick = () => { dragging = !dragging; send({ type: dragging ? "down" : "up", button: "left" }); $("#dragBtn").classList.toggle("held", dragging); };
+
+  // keyboard: send what's typed, keep box short
+  const box = $("#typeBox");
+  box.addEventListener("input", (e) => {
+    if (e.inputType === "deleteContentBackward") send({ type: "key", keys: "backspace" });
+    else if (e.data) send({ type: "type", text: e.data });
+    if (box.value.length > 40) box.value = "";
+  });
+  box.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { send({ type: "key", keys: "enter" }); box.value = ""; e.preventDefault(); }
+    if (e.key === "Backspace" && !box.value) send({ type: "key", keys: "backspace" });
+  });
+  const SPECIAL = ["esc", "tab", "enter", "backspace", "delete", "up", "down", "left", "right", "home", "end", "pageup", "pagedown", "ctrl+a", "ctrl+c", "ctrl+v", "ctrl+z", "alt+tab", "alt+f4", "win", "f5", "f11"];
+  $("#specialKeys").innerHTML = SPECIAL.map((k) => `<button data-k="${k}">${k}</button>`).join("");
+  $("#specialKeys").onclick = (e) => { const b = e.target.closest("button"); if (b) { vibrate(8); send({ type: "key", keys: b.dataset.k }); } };
+
+  // ---------------------------------------------------------------- screen
+  let screenOn = false, hasScreen = true, frameUrl = null;
+  const img = $("#screenImg");
+  function startScreen() {
+    if (!hasScreen) { $("#screenMsg").textContent = "Screen view needs: pip install mss pillow"; return; }
+    send({ type: "screen", on: true, fps: +$("#fps").value, width: +$("#qual").value, quality: +$("#qual").value > 1280 ? 70 : 55 });
+  }
+  function stopScreen() { send({ type: "screen", on: false }); }
+  function showFrame(blob) {
+    if (!screenOn) return;
+    const url = URL.createObjectURL(blob);
+    img.onload = () => { if (frameUrl) URL.revokeObjectURL(frameUrl); frameUrl = url; };
+    img.src = url; img.hidden = false; $("#screenMsg").hidden = true;
+  }
+  $("#fps").onchange = $("#qual").onchange = () => screenOn && startScreen();
+  let pressTimer = null, pressPos = null, longFired = false;
+  img.addEventListener("pointerdown", (e) => {
+    pressPos = rel(e); longFired = false;
+    pressTimer = setTimeout(() => { longFired = true; vibrate(25); send({ type: "abs", ...pressPos, click: true, button: "right" }); }, 550);
+  });
+  img.addEventListener("pointerup", (e) => {
+    clearTimeout(pressTimer);
+    if (!longFired && pressPos) { vibrate(8); send({ type: "abs", ...rel(e), click: true, button: "left" }); }
+    pressPos = null;
+  });
+  img.addEventListener("pointercancel", () => { clearTimeout(pressTimer); pressPos = null; });
+  img.addEventListener("contextmenu", (e) => e.preventDefault());
+  function rel(e) { const r = img.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; }
+
+  // ---------------------------------------------------------------- nav & misc
+  document.querySelectorAll("nav button").forEach((b) => b.onclick = () => {
+    document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("active", x === b));
+    document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === b.dataset.view));
+    const isDeck = b.dataset.view === "deck";
+    $("#pages").style.visibility = isDeck ? "" : "hidden";
+    $("#editBtn").style.visibility = isDeck ? "" : "hidden";
+    screenOn = b.dataset.view === "screen";
+    screenOn ? startScreen() : stopScreen();
+  });
+  $("#fsBtn").onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.().catch(() => toast("Fullscreen not available"));
+  };
+  // keep the tablet awake while the deck is open
+  let wakeLock = null;
+  async function keepAwake() { try { wakeLock = await navigator.wakeLock?.request("screen"); } catch (e) {} }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") keepAwake(); });
+  keepAwake();
+
+  connect();
+  loadConfig();
+})();
+</script>
+</body>
+</html>

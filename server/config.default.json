@@ -1,0 +1,36 @@
+{
+  "port": 8765,
+  "columns": 5,
+  "pages": [
+    {
+      "name": "Main",
+      "buttons": [
+        {"label": "Play / Pause", "icon": "⏯️", "color": "#7c3aed", "action": {"type": "media", "key": "play_pause"}},
+        {"label": "Previous", "icon": "⏮️", "color": "#7c3aed", "action": {"type": "media", "key": "prev"}},
+        {"label": "Next", "icon": "⏭️", "color": "#7c3aed", "action": {"type": "media", "key": "next"}},
+        {"label": "Vol −", "icon": "🔉", "color": "#2563eb", "action": {"type": "media", "key": "vol_down", "repeat": 2}},
+        {"label": "Vol +", "icon": "🔊", "color": "#2563eb", "action": {"type": "media", "key": "vol_up", "repeat": 2}},
+        {"label": "Mute", "icon": "🔇", "color": "#2563eb", "action": {"type": "media", "key": "mute"}},
+        {"label": "Copy", "icon": "📋", "color": "#0f766e", "action": {"type": "hotkey", "keys": "ctrl+c"}},
+        {"label": "Paste", "icon": "📥", "color": "#0f766e", "action": {"type": "hotkey", "keys": "ctrl+v"}},
+        {"label": "Undo", "icon": "↩️", "color": "#0f766e", "action": {"type": "hotkey", "keys": "ctrl+z"}},
+        {"label": "Screenshot", "icon": "📸", "color": "#0f766e", "action": {"type": "hotkey", "keys": "win+shift+s"}},
+        {"label": "Desktop", "icon": "🖥️", "color": "#475569", "action": {"type": "hotkey", "keys": "win+d"}},
+        {"label": "Task View", "icon": "🗂️", "color": "#475569", "action": {"type": "hotkey", "keys": "win+tab"}},
+        {"label": "Lock PC", "icon": "🔒", "color": "#b91c1c", "action": {"type": "hotkey", "keys": "win+l"}},
+        {"label": "Apps", "icon": "📁", "color": "#ca8a04", "action": {"type": "page", "page": "Apps"}},
+        {"label": "Browser", "icon": "🌐", "color": "#ca8a04", "action": {"type": "url", "url": "https://github.com"}}
+      ]
+    },
+    {
+      "name": "Apps",
+      "buttons": [
+        {"label": "Back", "icon": "⬅️", "color": "#475569", "action": {"type": "page", "page": "Main"}},
+        {"label": "Explorer", "icon": "🗃️", "color": "#ca8a04", "action": {"type": "hotkey", "keys": "win+e"}},
+        {"label": "Notepad", "icon": "📝", "color": "#ca8a04", "action": {"type": "launch", "path": "notepad.exe"}},
+        {"label": "Calculator", "icon": "🧮", "color": "#ca8a04", "action": {"type": "launch", "path": "calc.exe"}},
+        {"label": "Task Manager", "icon": "📊", "color": "#ca8a04", "action": {"type": "hotkey", "keys": "ctrl+shift+esc"}}
+      ]
+    }
+  ]
+}
