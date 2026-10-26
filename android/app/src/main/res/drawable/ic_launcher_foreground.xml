@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 3x3 grid of deck keys inside the adaptive-icon safe zone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#7C3AED" android:pathData="M36,33h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#2563EB" android:pathData="M51,33h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#2563EB" android:pathData="M66,33h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#0F766E" android:pathData="M36,48h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#22C55E" android:pathData="M51,48h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#0F766E" android:pathData="M66,48h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#CA8A04" android:pathData="M36,63h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#CA8A04" android:pathData="M51,63h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+    <path android:fillColor="#B91C1C" android:pathData="M66,63h6a3,3 0,0 1,3 3v6a3,3 0,0 1,-3 3h-6a3,3 0,0 1,-3 -3v-6a3,3 0,0 1,3 -3z" />
+</vector>

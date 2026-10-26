@@ -1,0 +1,66 @@
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+    paths: ["android/**", ".github/workflows/android.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HAS_SIGNING_KEY: ${{ secrets.PCDECK_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      # Optional: add these repository secrets to sign with your own key so
+      # new versions install over old ones without uninstalling first.
+      # PCDECK_KEYSTORE_BASE64, PCDECK_KEYSTORE_PASSWORD, PCDECK_KEY_ALIAS, PCDECK_KEY_PASSWORD
+      - name: Decode signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.PCDECK_KEYSTORE_BASE64 }}
+        if: env.HAS_SIGNING_KEY == 'true'
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/pcdeck.jks"
+          echo "PCDECK_KEYSTORE_FILE=$RUNNER_TEMP/pcdeck.jks" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        working-directory: android
+        env:
+          PCDECK_KEYSTORE_PASSWORD: ${{ secrets.PCDECK_KEYSTORE_PASSWORD }}
+          PCDECK_KEY_ALIAS: ${{ secrets.PCDECK_KEY_ALIAS }}
+          PCDECK_KEY_PASSWORD: ${{ secrets.PCDECK_KEY_PASSWORD }}
+        run: gradle --no-daemon assembleRelease
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk PC-Deck.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PC-Deck-apk
+          path: PC-Deck.apk
+
+      - name: Publish to "Latest Android build" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: Latest Android build
+          prerelease: true
+          make_latest: false
+          body: |
+            Download **PC-Deck.apk** on your tablet and open it to install.
+            Built from ${{ github.sha }} (build #${{ github.run_number }}).
+          files: PC-Deck.apk

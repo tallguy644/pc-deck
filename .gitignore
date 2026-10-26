@@ -3,3 +3,10 @@ server/config.tmp
 server/.venv/
 __pycache__/
 *.pyc
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.jks
+*.keystore

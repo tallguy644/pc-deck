@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PC Deck</string>
+    <string name="tagline">Control your PC from this tablet</string>
+    <string name="scan_qr">Scan QR code</string>
+    <string name="scan_prompt">Scan the QR code shown in the PC Deck window on your computer</string>
+    <string name="or_manual">or enter it manually</string>
+    <string name="address_hint">PC address (e.g. 192.168.1.20:8765)</string>
+    <string name="token_hint">Token</string>
+    <string name="connect">Connect</string>
+    <string name="help">Run start.bat on your PC first. Both devices need to be on the same Wi-Fi.</string>
+    <string name="bad_qr">That QR code isn\'t a PC Deck link</string>
+    <string name="need_fields">Enter the PC address and token</string>
+    <string name="cant_reach">Can\'t reach your PC</string>
+    <string name="cant_reach_detail">Make sure PC Deck is running on your computer and both devices are on the same Wi-Fi.</string>
+    <string name="retry">Retry</string>
+    <string name="change_pc">Change PC</string>
+    <string name="leave_title">Disconnect from PC?</string>
+    <string name="leave">Disconnect</string>
+    <string name="stay">Stay</string>
+</resources>

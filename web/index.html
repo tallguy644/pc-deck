@@ -210,7 +210,8 @@
 
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const vibrate = (ms = 12) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+  const app = window.DeckApp; // present when running inside the Android app
+  const vibrate = (ms = 12) => { try { app ? app.vibrate(ms) : navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 
   let toastTimer;
   function toast(msg) {
@@ -263,7 +264,11 @@
   async function loadConfig() {
     try {
       const r = await fetch("/api/config", { headers: { "X-Deck-Token": token } });
-      if (r.status === 401) { localStorage.removeItem("deck.token"); toast("Token rejected — reopen the link from your PC"); return; }
+      if (r.status === 401) {
+        try { localStorage.removeItem("deck.token"); } catch (e) {}
+        if (app) return app.tokenRejected();
+        toast("Token rejected — reopen the link from your PC"); return;
+      }
       config = await r.json();
       try { pageIdx = Math.min(+localStorage.getItem("deck.page") || 0, config.pages.length - 1); } catch (e) {}
       render();
@@ -514,7 +519,9 @@
     screenOn = b.dataset.view === "screen";
     screenOn ? startScreen() : stopScreen();
   });
+  if (app) { $("#fsBtn").textContent = "🔌"; $("#fsBtn").title = "Change PC"; }
   $("#fsBtn").onclick = () => {
+    if (app) return confirm("Disconnect and choose a different PC?") && app.changePc();
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen?.().catch(() => toast("Fullscreen not available"));
   };
