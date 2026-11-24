@@ -52,6 +52,7 @@ jobs:
         with:
           name: PC-Deck-apk
           path: PC-Deck.apk
+          retention-days: 5
 
       - name: Publish to "Latest Android build" release
         uses: softprops/action-gh-release@v2
